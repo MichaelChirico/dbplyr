@@ -346,7 +346,8 @@ base_scalar <- sql_translator(
   str_view = sql_not_supported("str_view"),
   str_view_all = sql_not_supported("str_view_all"),
   str_which = sql_not_supported("str_which"),
-  str_wrap = sql_not_supported("str_wrap")
+  str_wrap = sql_not_supported("str_wrap"),
+  .POSIXct = sql_prefix("foo", 1)
 )
 
 base_symbols <- sql_translator(
