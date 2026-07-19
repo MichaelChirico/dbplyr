@@ -173,6 +173,18 @@ base_scalar <- sql_translator(
       sql_glue("{x} IN {table*}")
     }
   },
+  `%notin%` = function(x, table) {
+    if (is.ident(table)) {
+      return(sql_glue("{x} NOT IN {table}"))
+    }
+
+    table <- unname(table)
+    if (length(table) == 0) {
+      sql("TRUE")
+    } else {
+      sql_glue("{x} NOT IN {table*}")
+    }
+  },
 
   `!` = sql_prefix("NOT"),
   `&` = sql_infix("AND"),
@@ -238,6 +250,9 @@ base_scalar <- sql_translator(
     sql_if(enquo(cond), enquo(if_true), enquo(if_false))
   },
   if_else = function(condition, true, false, missing = NULL) {
+    check_required(true)
+    check_required(false)
+
     sql_if(
       enquo(condition),
       enquo(true),
@@ -245,7 +260,12 @@ base_scalar <- sql_translator(
       enquo(missing)
     )
   },
-  ifelse = \(test, yes, no) sql_if(enquo(test), enquo(yes), enquo(no)),
+  ifelse = function(test, yes, no) {
+    check_required(yes)
+    check_required(no)
+
+    sql_if(enquo(test), enquo(yes), enquo(no))
+  },
 
   switch = \(x, ...) sql_switch(x, ...),
   case_when = function(..., .default = NULL, .ptype = NULL, .size = NULL) {
@@ -267,6 +287,20 @@ base_scalar <- sql_translator(
   is.na = sql_is_null,
   na_if = sql_prefix("NULLIF", 2),
   coalesce = sql_prefix("COALESCE"),
+
+  # `is_distinct_from()` and `is_not_distinct_from()` are dbplyr-only
+  # translations that emit SQL's `IS DISTINCT FROM` / `IS NOT DISTINCT FROM`.
+  # Defaults use approach from https://modern-sql.com/feature/is-distinct-from
+  is_distinct_from = function(x, y) {
+    sql_glue(
+      "CASE WHEN (({x}) = ({y})) OR (({x}) IS NULL AND ({y}) IS NULL) THEN 0 ELSE 1 END = 1"
+    )
+  },
+  is_not_distinct_from = function(x, y) {
+    sql_glue(
+      "CASE WHEN (({x}) = ({y})) OR (({x}) IS NULL AND ({y}) IS NULL) THEN 0 ELSE 1 END = 0"
+    )
+  },
 
   as.numeric = sql_cast("NUMERIC"),
   as.double = sql_cast("NUMERIC"),
@@ -449,6 +483,11 @@ sql_exp <- function(a, x) {
   }
 }
 
+sql_any_na <- function(x, window = FALSE) {
+  exp <- expr(any(is.na(!!x), na.rm = TRUE))
+  translate_sql(!!exp, con = sql_current_con(), window = window)
+}
+
 #' @export
 #' @rdname sql_variant
 #' @format NULL
@@ -464,6 +503,7 @@ base_agg <- sql_translator(
   # https://blog.jooq.org/a-true-sql-gem-you-didnt-know-yet-the-every-aggregate-function/#comment-344695
   all = sql_aggregate("MIN"),
   any = sql_aggregate("MAX"),
+  anyNA = \(x) sql_any_na(x, window = FALSE),
 
   sd = sql_not_supported("sd"),
   var = sql_not_supported("var"),
@@ -564,6 +604,7 @@ base_win <- sql_translator(
 
   all = win_aggregate("MIN"),
   any = win_aggregate("MAX"),
+  anyNA = \(x) sql_any_na(x, window = TRUE),
 
   sd = sql_not_supported("sd"),
   var = sql_not_supported("var"),
@@ -629,6 +670,7 @@ base_no_win <- sql_translator(
   max = win_absent("max"),
   all = win_absent("all"),
   any = win_absent("any"),
+  anyNA = win_absent("anyNA"),
   median = win_absent("median"),
   quantile = win_absent("quantile"),
   n = win_absent("n"),
@@ -641,7 +683,7 @@ base_no_win <- sql_translator(
   first = win_absent("first"),
   last = win_absent("last"),
   lead = win_absent("lead"),
-  lag = win_absent("lad"),
+  lag = win_absent("lag"),
   order_by = win_absent("order_by"),
   str_flatten = win_absent("str_flatten"),
   count = win_absent("count")

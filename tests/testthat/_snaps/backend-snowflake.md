@@ -7,20 +7,6 @@
       ! `collapse` not supported in DB translation of `paste()`.
       i Please use `str_flatten()` instead.
 
-# pmin() and pmax() respect na.rm
-
-    Code
-      translate_sql(pmin(x, y, z, na.rm = TRUE), con = con)
-    Output
-      <SQL> COALESCE(IFF(COALESCE(IFF("x" <= "y", "x", "y"), "x", "y") <= "z", COALESCE(IFF("x" <= "y", "x", "y"), "x", "y"), "z"), COALESCE(IFF("x" <= "y", "x", "y"), "x", "y"), "z")
-
----
-
-    Code
-      translate_sql(pmax(x, y, z, na.rm = TRUE), con = con)
-    Output
-      <SQL> COALESCE(IFF(COALESCE(IFF("x" >= "y", "x", "y"), "x", "y") >= "z", COALESCE(IFF("x" >= "y", "x", "y"), "x", "y"), "z"), COALESCE(IFF("x" >= "y", "x", "y"), "x", "y"), "z")
-
 # row_number() with and without group_by() and arrange(): unordered defaults to Ordering by NULL (per empty_order)
 
     Code
@@ -48,4 +34,13 @@
       SELECT *, ROW_NUMBER() OVER (ORDER BY "y") AS "rown"
       FROM "df"
       ORDER BY "y"
+
+# window functions use inline OVER, not named WINDOW clause
+
+    Code
+      mutate(group_by(mf, a), b = mean(b))
+    Output
+      <SQL>
+      SELECT "a", AVG("b") OVER (PARTITION BY "a") AS "b"
+      FROM "df"
 

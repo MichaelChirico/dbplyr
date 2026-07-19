@@ -161,7 +161,7 @@ database as \code{x}. \verb{*_join()} will automatically run \code{ANALYZE} on t
 created table in the hope that this will make your queries as efficient
 as possible by giving more data to the query planner.
 \item \code{"inline"}: \code{y} will be inlined into the query using \code{\link[=copy_inline]{copy_inline()}}.
-This is should faster for small datasets and doesn't require write
+This should be faster for small datasets and doesn't require write
 access.
 }
 
@@ -188,7 +188,7 @@ inequality conditions.
 
 \item{na_matches}{Should NA (NULL) values match one another?
 The default, "never", is how databases usually work. \code{"na"} makes
-the joins behave like the dplyr join functions, \code{\link[=merge]{merge()}}, \code{\link[bit64:bit64S3]{bit64::match()}},
+the joins behave like the dplyr join functions, \code{\link[=merge]{merge()}}, \code{\link[base:match]{base::match()}},
 and \code{\%in\%}.}
 
 \item{multiple, unmatched}{Unsupported in database backends. As a workaround
@@ -198,7 +198,7 @@ for multiple use a unique key and for unmatched a foreign key constraint.}
 
 \item{sql_on}{A custom join predicate as an SQL expression.
 Usually joins use column equality, but you can perform more complex
-queries by supply \code{sql_on} which should be a SQL expression that
+queries by supplying \code{sql_on} which should be a SQL expression that
 uses \code{LHS} and \code{RHS} aliases to refer to the left-hand side or
 right-hand side of the join respectively.}
 
@@ -215,7 +215,7 @@ query, and use \code{\link[=collect.tbl_sql]{collect()}} to execute the query
 and return data to R.
 }
 \description{
-These are methods for the dplyr \link[dplyr:mutate-joins]{dplyr::join} generics. They are translated
+These are methods for the dplyr \link[dplyr:join]{join} generics. They are translated
 to the following SQL queries:
 \itemize{
 \item \code{inner_join(x, y)}: \verb{SELECT * FROM x JOIN y ON x.a = y.a}

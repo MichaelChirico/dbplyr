@@ -215,13 +215,10 @@ test_that("cross join via by = character() is deprecated", {
   df1 <- local_memdb_frame(x = 1:5)
   df2 <- local_memdb_frame(y = 1:5)
 
-  expect_snapshot({
-    out_inner <- collect(inner_join(df1, df2, by = character()))
-    out_full <- collect(full_join(df1, df2, by = character()))
+  expect_snapshot(error = TRUE, {
+    inner_join(df1, df2, by = character())
+    full_join(df1, df2, by = character())
   })
-
-  expect_shape(out_inner, nrow = 25)
-  expect_shape(out_full, nrow = 25)
 })
 
 df1 <- local_memdb_frame(x = 1:5, y = 1:5)
@@ -1433,6 +1430,14 @@ test_that("right_join uses *", {
     out$select,
     sql('"df_RHS"."a" AS "a"', '"df_LHS"."b" AS "b.x"', '"df_RHS"."b" AS "b.y"')
   )
+})
+
+test_that("cross_join() errors if `...` is not empty (#1792)", {
+  lf1 <- lazy_frame(a = 1)
+  lf2 <- lazy_frame(b = 1)
+  lf3 <- lazy_frame(c = 1)
+
+  expect_snapshot(cross_join(lf1, lf2, lf3), error = TRUE)
 })
 
 test_that("cross_join uses *", {

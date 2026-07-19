@@ -336,6 +336,9 @@ mssql_scalar_base <- function() {
       )
     },
     if_else = function(condition, true, false, missing = NULL) {
+      check_required(true)
+      check_required(false)
+
       mssql_sql_if(
         enquo(condition),
         enquo(true),
@@ -344,6 +347,9 @@ mssql_scalar_base <- function() {
       )
     },
     ifelse = function(test, yes, no) {
+      check_required(yes)
+      check_required(no)
+
       mssql_sql_if(enquo(test), enquo(yes), enquo(no))
     },
     case_when = mssql_case_when,
@@ -883,17 +889,17 @@ db_sql_render.sql_dialect_mssql <- function(
 }
 
 mssql_render_preprocess <- function(sql) {
-  # Post-process WHERE to cast logicals from BIT to BOOLEAN
+  # Post-process WHERE to cast logicals from BIT to BOOLEAN.
   sql$lazy_query <- purrr::modify_tree(
     sql$lazy_query,
-    is_node = \(x) inherits(x, "lazy_query"),
+    is_node = \(x) is.list(x) || inherits(x, "lazy_query"),
     post = mssql_update_where_clause
   )
   sql
 }
 
 mssql_update_where_clause <- function(qry) {
-  if (!has_name(qry, "where")) {
+  if (!inherits(qry, "lazy_query") || !has_name(qry, "where")) {
     return(qry)
   }
 

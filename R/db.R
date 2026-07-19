@@ -1,14 +1,29 @@
 #' Miscellaneous database generics
 #'
+#' @description
+#' These are used when creating a new dbplyr backend and should generally not
+#' be called directly.
+#'
 #' * `db_connection_describe()` provides a short string describing the
 #'   database connection, helping users tell which database a table comes
 #'   from. It should be a single line, and ideally less than 60 characters wide.
 #'
 #' * `dbplyr_edition()` declares which version of the dbplyr API you want.
-#'    See below for more details.
 #'
-#' * `db_col_types()` returns the column types of a table.
+#' * `db_col_types()` introspects an existing table and returns a named
+#'   character vector mapping column names to their database-native SQL types.
+#'   The result is suitable for use as the `field.types` argument of
+#'   [DBI::dbWriteTable()], allowing dbplyr to preserve column types when
+#'   copying data with `rows_*()`.
 #'
+#'   Returns `NULL` if the backend does not implement introspection.
+#'
+#' @param con A database connection.
+#' @param table A table identifier, or `NULL`. Use a string to refer to tables
+#'   in the current schema/catalog or `I()` to refer to tables in other
+#'   schemas/catalogs.
+#' @param call The execution environment of a currently running function, used
+#'   to report errors.
 #' @family generic
 #' @keywords internal
 #' @name db-misc
@@ -46,7 +61,7 @@ sql_join_suffix.sql_dialect <- sql_join_suffix.DBIConnection
 db_sql_render <- function(con, sql, ..., cte = FALSE, sql_options = NULL) {
   check_bool(cte)
   if (cte) {
-    lifecycle::deprecate_soft(
+    lifecycle::deprecate_warn(
       when = "2.4.0",
       what = "db_sql_render(cte)",
       with = I("db_sql_render(sql_options = sql_options(cte = TRUE))")
@@ -108,6 +123,8 @@ db_col_types.default <- function(con, table, call) {
 }
 
 #' Options for generating SQL
+#'
+#' Customise SQL generation with these three options.
 #'
 #' @param cte If `FALSE`, the default, subqueries are used. If `TRUE` common
 #'   table expressions are used.

@@ -103,7 +103,17 @@ postgres_round <- function(x, digits = 0L) {
 }
 
 # https://neon.com/postgresql/postgresql-date-functions/postgresql-make_interval
+# All MAKE_INTERVAL() parameters are integer typed, except `secs`, so we must
+# coerce the argument to an integer. R doubles are escaped with a trailing `.0`
+# (e.g. `months(1)` gives `1.0`), which MAKE_INTERVAL() rejects.
 postgres_period <- function(x, unit) {
+  if (unit != "secs") {
+    if (is.numeric(x)) {
+      x <- as.integer(x)
+    } else if (is.ident(x)) {
+      x <- sql_glue("CAST({x} AS integer)")
+    }
+  }
   sql_glue("MAKE_INTERVAL({.sql unit} => {x})")
 }
 
@@ -112,6 +122,11 @@ sql_translation.sql_dialect_postgres <- function(con) {
   sql_variant(
     sql_translator(
       .parent = base_scalar,
+      # https://www.postgresql.org/docs/current/functions-comparison.html
+      is_distinct_from = \(x, y) sql_glue("({x}) IS DISTINCT FROM ({y})"),
+      is_not_distinct_from = function(x, y) {
+        sql_glue("({x}) IS NOT DISTINCT FROM ({y})")
+      },
       bitwXor = sql_infix("#"),
       log10 = \(x) sql_glue("LOG({x})"),
       log = sql_log(),
@@ -346,12 +361,6 @@ sql_translation.sql_dialect_postgres <- function(con) {
       quantile = sql_win_not_supported("quantile", "PostgreSQL")
     )
   )
-}
-
-#' @export
-sql_expr_matches.sql_dialect_postgres <- function(con, x, y, ...) {
-  # https://www.postgresql.org/docs/current/functions-comparison.html
-  sql_glue2(con, "{x} IS NOT DISTINCT FROM {y}")
 }
 
 # http://www.postgresql.org/docs/9.3/static/sql-explain.html

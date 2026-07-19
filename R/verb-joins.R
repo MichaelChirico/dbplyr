@@ -26,7 +26,7 @@
 #'     as possible by giving more data to the query planner.
 #'
 #'   * `"inline"`: `y` will be inlined into the query using [copy_inline()].
-#'     This is should faster for small datasets and doesn't require write
+#'     This should be faster for small datasets and doesn't require write
 #'     access.
 #'
 #'   `TRUE` (`"temp-table"`) and `FALSE` (`"none"`) are also accepted for
@@ -36,12 +36,12 @@
 #'   there are matching indexes in `x`.
 #' @param sql_on A custom join predicate as an SQL expression.
 #'   Usually joins use column equality, but you can perform more complex
-#'   queries by supply `sql_on` which should be a SQL expression that
+#'   queries by supplying `sql_on` which should be a SQL expression that
 #'   uses `LHS` and `RHS` aliases to refer to the left-hand side or
 #'   right-hand side of the join respectively.
 #' @param na_matches Should NA (NULL) values match one another?
 #'   The default, "never", is how databases usually work. `"na"` makes
-#'   the joins behave like the dplyr join functions, [merge()], [match()],
+#'   the joins behave like the dplyr join functions, [merge()], [base::match()],
 #'   and `%in%`.
 #' @param multiple,unmatched Unsupported in database backends. As a workaround
 #'   for multiple use a unique key and for unmatched a foreign key constraint.
@@ -254,6 +254,7 @@ cross_join.tbl_lazy <- function(
   x_as = NULL,
   y_as = NULL
 ) {
+  check_dots_empty()
   x$lazy_query <- add_join(
     x,
     y,
@@ -266,8 +267,7 @@ cross_join.tbl_lazy <- function(
     keep = NULL,
     na_matches = "never",
     x_as = x_as,
-    y_as = y_as,
-    ...
+    y_as = y_as
   )
 
   x
@@ -676,21 +676,14 @@ join_prepare_by <- function(
   type,
   x_names,
   y_names,
-  error_call,
-  env = caller_env(2),
-  user_env = caller_env(3)
+  error_call
 ) {
-  if (identical(by, character()) && is.null(sql_on)) {
-    if (type != "cross") {
-      lifecycle::deprecate_warn(
-        when = "1.1.0",
-        what = I("Using `by = character()` to perform a cross join"),
-        with = "cross_join()",
-        env = env,
-        user_env = user_env
-      )
-    }
-    type <- "cross"
+  if (identical(by, character()) && is.null(sql_on) && type != "cross") {
+    lifecycle::deprecate_stop(
+      when = "1.1.0",
+      what = I("Using `by = character()` to perform a cross join"),
+      with = "cross_join()"
+    )
   }
 
   if (!is.null(sql_on)) {

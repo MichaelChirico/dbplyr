@@ -21,3 +21,6 @@ vignettes/*.R
 revdep/checks
 revdep/library
 docs
+/scratch/
+dbplyr.Rcheck/
+dbplyr_*.tar.gz

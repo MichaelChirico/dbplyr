@@ -84,16 +84,16 @@
 # cross join via by = character() is deprecated
 
     Code
-      out_inner <- collect(inner_join(df1, df2, by = character()))
+      inner_join(df1, df2, by = character())
     Condition
-      Warning:
-      Using `by = character()` to perform a cross join was deprecated in dbplyr 1.1.0.
+      Error:
+      ! Using `by = character()` to perform a cross join was deprecated in dbplyr 1.1.0 and is now defunct.
       i Please use `cross_join()` instead.
     Code
-      out_full <- collect(full_join(df1, df2, by = character()))
+      full_join(df1, df2, by = character())
     Condition
-      Warning:
-      Using `by = character()` to perform a cross join was deprecated in dbplyr 1.1.0.
+      Error:
+      ! Using `by = character()` to perform a cross join was deprecated in dbplyr 1.1.0 and is now defunct.
       i Please use `cross_join()` instead.
 
 # join check `x_as` and `y_as`
@@ -408,7 +408,7 @@
       SELECT "lf1"."x" AS "x"
       FROM "lf1"
       LEFT JOIN "lf2"
-        ON ("lf1"."x" IS NOT DISTINCT FROM "lf2"."x")
+        ON (("lf1"."x") IS NOT DISTINCT FROM ("lf2"."x"))
 
 ---
 
@@ -420,7 +420,7 @@
       FROM "lf1"
       WHERE EXISTS (
         SELECT 1 FROM "lf2"
-        WHERE ("lf1"."x" IS NOT DISTINCT FROM "lf2"."x")
+        WHERE (("lf1"."x") IS NOT DISTINCT FROM ("lf2"."x"))
       )
 
 ---
@@ -451,6 +451,17 @@
       <error/rlang_error>
       Error in `inner_join()`:
       ! `suffix` must be a character vector of length 2, not an integer of length 1.
+
+# cross_join() errors if `...` is not empty (#1792)
+
+    Code
+      cross_join(lf1, lf2, lf3)
+    Condition
+      Error in `cross_join()`:
+      ! `...` must be empty.
+      x Problematic argument:
+      * ..1 = lf3
+      i Did you forget to name an argument?
 
 # joins reuse queries in cte mode
 

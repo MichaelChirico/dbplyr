@@ -79,7 +79,7 @@ test_that("compute can handle schema", {
 test_that("compute(temporary = FALSE) without a name is deprecated", {
   df <- local_memdb_frame(x = 1:10)
 
-  expect_snapshot_warning(df |> compute(temporary = FALSE))
+  expect_snapshot(error = TRUE, df |> compute(temporary = FALSE))
 })
 
 test_that("sorting preserved across compute", {
@@ -87,4 +87,18 @@ test_that("sorting preserved across compute", {
 
   df2 <- compute(df1)
   expect_equal(get_expr(op_sort(df2)[[1]]), quote(x))
+})
+
+test_that("compute dispatches through custom tbl method", {
+  local_methods(
+    tbl.SQLiteConnection = function(src, from, ...) {
+      out <- NextMethod()
+      attr(out, "custom") <- TRUE
+      out
+    }
+  )
+
+  df <- local_memdb_frame(x = 1)
+  out <- compute(df)
+  expect_true(attr(out, "custom"))
 })
